@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crew Roles</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f7ff; color: #1a1a2e; min-height: 100vh; padding: 2rem; }
+.app { max-width: 960px; margin: 0 auto; }
+.btn { font-size: 13px; padding: 7px 16px; border-radius: 8px; border: 1px solid #c0c8e0; background: transparent; color: #1a1a2e; cursor: pointer; font-family: inherit; }
+.btn:hover { background: #eef0f8; }
+.btn-primary { background: #1a1a2e; color: #f5f7ff; border-color: #1a1a2e; font-weight: 500; }
+.btn-primary:hover { background: #2d2d50; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-danger { border-color: #c0392b; color: #c0392b; }
+.btn-danger:hover { background: #fde8e8; }
+.btn-warn { border-color: #c47a00; color: #c47a00; }
+.btn-warn:hover { background: #fff3cd; }
+
+.class-switcher { display: flex; gap: 8px; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap; }
+.class-btn { font-size: 13px; padding: 7px 18px; border-radius: 20px; border: 1px solid #c0c8e0; background: transparent; color: #555; cursor: pointer; font-family: inherit; }
+.class-btn.active { background: #1a1a2e; color: #f5f7ff; border-color: #1a1a2e; font-weight: 500; }
+.class-btn:hover:not(.active) { background: #eef0f8; }
+.add-section-btn { font-size: 13px; padding: 7px 14px; border-radius: 20px; border: 1px dashed #c0c8e0; background: transparent; color: #888; cursor: pointer; font-family: inherit; }
+.add-section-btn:hover { background: #eef0f8; color: #1a1a2e; }
+
+.top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px; }
+.meta { font-size: 13px; color: #666; }
+.action-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; border-bottom: 1px solid #dde2f0; }
+.tab { font-size: 13px; padding: 6px 14px; border: none; background: none; cursor: pointer; color: #888; font-family: inherit; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab.active { color: #1a1a2e; border-bottom-color: #5b8dee; font-weight: 500; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+.board { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+.role-card { background: #fff; border: 1px solid #dde2f0; border-radius: 12px; padding: 1rem 1.25rem; }
+.role-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin-bottom: 6px; }
+.assignee-chip { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #1a1a2e; margin-top: 6px; }
+.avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; flex-shrink: 0; }
+
+.absence-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1.5rem; }
+.absence-label { font-size: 13px; font-weight: 500; color: #666; margin-bottom: 8px; }
+.absence-toggle { font-size: 13px; padding: 6px 14px; border-radius: 20px; border: 1px solid #c0c8e0; background: #fff; color: #1a1a2e; cursor: pointer; font-family: inherit; }
+.absence-toggle.absent { background: #fde8e8; color: #a32d2d; border-color: #f09595; text-decoration: line-through; }
+
+.pill-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { font-size: 12px; padding: 4px 10px; border-radius: 20px; background: #eef0f8; color: #666; border: 1px solid #dde2f0; }
+.flag-new { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #fff3cd; color: #7a5000; border: 1px solid #f0d080; margin-left: 6px; }
+.flag-absent { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #fde8e8; color: #a32d2d; border: 1px solid #f09595; margin-left: 6px; }
+.badge-role { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #eef2ff; color: #3347a3; border: 1px solid #c0ccf7; margin: 2px; }
+.day-badge { font-size: 13px; font-weight: 500; padding: 4px 12px; border-radius: 8px; background: #1a1a2e; color: #f5f7ff; }
+.alert { font-size: 13px; padding: 10px 14px; border-radius: 8px; background: #eef0f8; color: #666; border: 1px solid #dde2f0; }
+.unassigned-section { margin-top: 1rem; }
+.unassigned-section h3 { font-size: 13px; font-weight: 500; color: #666; margin-bottom: 8px; }
+.section-divider { font-size: 13px; font-weight: 500; color: #666; margin: 1rem 0 8px; }
+.history-table { width: 100%; font-size: 13px; border-collapse: collapse; }
+.history-table th { text-align: left; font-weight: 500; font-size: 12px; color: #888; padding: 6px 10px; border-bottom: 1px solid #dde2f0; }
+.history-table td { padding: 8px 10px; border-bottom: 1px solid #dde2f0; color: #1a1a2e; }
+.history-table tr:last-child td { border-bottom: none; }
+.setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.setup-section label { font-size: 13px; font-weight: 500; color: #666; display: block; margin-bottom: 6px; }
+.setup-section textarea { width: 100%; height: 180px; font-size: 13px; font-family: inherit; border: 1px solid #c0c8e0; border-radius: 8px; padding: 10px 12px; resize: vertical; color: #1a1a2e; background: #fff; }
+.setup-section textarea:focus { outline: none; border-color: #5b8dee; }
+.setup-hint { font-size: 12px; color: #888; margin-top: 4px; }
+.rename-row { display: flex; gap: 8px; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; }
+.rename-row input { font-size: 13px; padding: 6px 10px; border-radius: 8px; border: 1px solid #c0c8e0; font-family: inherit; color: #1a1a2e; background: #fff; width: 220px; }
+.rename-row input:focus { outline: none; border-color: #5b8dee; }
+
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
+.modal-bg.open { display: flex; }
+.modal { background: #fff; border-radius: 12px; border: 1px solid #dde2f0; padding: 1.5rem; width: 340px; max-width: 90vw; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
+.modal h3 { font-size: 16px; font-weight: 500; margin-bottom: 1rem; color: #1a1a2e; }
+.modal input { width: 100%; font-size: 13px; padding: 8px 12px; border-radius: 8px; border: 1px solid #c0c8e0; font-family: inherit; color: #1a1a2e; background: #fff; margin-bottom: 1rem; }
+.modal input:focus { outline: none; border-color: #5b8dee; }
+.modal-row { display: flex; gap: 8px; justify-content: flex-end; }
+
+.display-overlay { display: none; position: fixed; inset: 0; background: #0d0d1a; z-index: 200; padding: 2rem; overflow-y: auto; }
+.display-overlay.open { display: block; }
+.display-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; flex-wrap: wrap; gap: 12px; }
+.display-title { font-size: 28px; font-weight: 500; color: #f5f7ff; }
+.display-day { font-size: 16px; color: #8888bb; margin-top: 4px; }
+.display-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.display-card { background: #1a1a2e; border: 1px solid #2d2d50; border-radius: 16px; padding: 1.5rem; }
+.display-role-label { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: #6666aa; margin-bottom: 12px; }
+.display-name { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.display-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 500; flex-shrink: 0; }
+.display-name-text { font-size: 22px; font-weight: 500; color: #f5f7ff; }
+.display-absent { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #2d2d50; }
+.display-absent-label { font-size: 12px; color: #6666aa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.06em; }
+.display-absent-names { font-size: 16px; color: #cc5555; }
+.display-unassigned-label { font-size: 12px; color: #6666aa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 1rem; }
+.display-unassigned-names { font-size: 16px; color: #8888aa; }
+.exit-btn { font-size: 13px; padding: 8px 18px; border-radius: 8px; border: 1px solid #3d3d6e; background: transparent; color: #aaaacc; cursor: pointer; font-family: inherit; }
+.exit-btn:hover { background: #1a1a2e; color: #f5f7ff; }
+
+@media (max-width: 600px) {
+  body { padding: 1rem; }
+  .setup-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;">Crew role assignment board</h1>
+
+  <div class="class-switcher" id="class-switcher"></div>
+
+  <div class="top-bar">
+    <div>
+      <div style="font-size:18px;font-weight:500;color:#1a1a2e;">Crew Roles</div>
+      <div class="meta" id="meta-line">No assignment yet</div>
+    </div>
+    <div class="action-row">
+      <button class="btn btn-warn" id="undo-btn" style="display:none;" onclick="undoToday()">Undo last assign</button>
+      <button class="btn" onclick="showTab('setup')">Edit setup</button>
+      <button class="btn" onclick="openDisplayMode()">Display mode ↗</button>
+      <button class="btn btn-primary" onclick="assignToday()">Assign today</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('board')">Today's board</button>
+    <button class="tab" onclick="showTab('history')">History</button>
+    <button class="tab" onclick="showTab('setup')">Setup</button>
+  </div>
+
+  <div class="panel active" id="panel-board">
+    <div id="absent-section" style="margin-bottom:1.5rem;">
+      <div class="absence-label">Mark absent today (tap to toggle)</div>
+      <div class="absence-grid" id="absence-grid"></div>
+    </div>
+    <div id="board-content">
+      <div class="alert">Mark any absences above, then press "Assign today."</div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-history">
+    <div id="history-content"><div class="alert">No history yet.</div></div>
+    <div style="margin-top:1rem;">
+      <button class="btn btn-sm btn-danger" onclick="clearHistory()">Clear history for this section</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-setup">
+    <div class="rename-row">
+      <label style="font-size:13px;font-weight:500;color:#666;">Section name</label>
+      <input type="text" id="section-name-input" />
+      <button class="btn btn-sm" onclick="saveSectionName()">Rename</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteSection()">Delete section</button>
+    </div>
+    <div class="setup-grid">
+      <div class="setup-section">
+        <label>Student names</label>
+        <textarea id="names-input" placeholder="One name per line&#10;e.g.&#10;Alex&#10;Jordan&#10;Sam"></textarea>
+        <div class="setup-hint">One name per line</div>
+      </div>
+      <div class="setup-section">
+        <label>Roles (with slots)</label>
+        <textarea id="roles-input"></textarea>
+        <div class="setup-hint">Format: Role Name: number of students</div>
+      </div>
+    </div>
+    <div style="margin-top:1rem;">
+      <button class="btn btn-primary" onclick="saveSetup()">Save setup</button>
+      <span id="setup-msg" style="font-size:13px;color:#666;margin-left:12px;"></span>
+    </div>
+    <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid #dde2f0;">
+      <div style="font-size:13px;font-weight:500;color:#666;margin-bottom:8px;">Backup & Restore</div>
+      <div style="font-size:12px;color:#888;margin-bottom:10px;">Download a backup of all sections, rosters, and history. Restore from a backup file if anything is lost.</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-sm" onclick="downloadBackup()">Download backup</button>
+        <button class="btn btn-sm" onclick="document.getElementById('restore-file').click()">Restore from file</button>
+        <input type="file" id="restore-file" accept=".json" style="display:none;" onchange="restoreBackup(event)" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-bg" onclick="handleModalBgClick(event)">
+  <div class="modal">
+    <h3>New section</h3>
+    <input type="text" id="new-section-name" placeholder="e.g. Film Studio — Period 3" onkeydown="if(event.key==='Enter')confirmNewSection()" />
+    <div class="modal-row">
+      <button class="btn btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-sm btn-primary" onclick="confirmNewSection()">Create</button>
+    </div>
+  </div>
+</div>
+
+<div class="display-overlay" id="display-overlay">
+  <div class="display-header">
+    <div>
+      <div class="display-title" id="display-title">Crew Roles</div>
+      <div class="display-day" id="display-day"></div>
+    </div>
+    <button class="exit-btn" onclick="closeDisplayMode()">Exit display mode</button>
+  </div>
+  <div class="display-board" id="display-board"></div>
+  <div id="display-footer"></div>
+</div>
+
+<script>
+const COLORS = [
+  ['#c8d8f8','#1a3a8f'],['#b8e8cc','#1a5a30'],['#ffd8b0','#8a3c00'],
+  ['#e0c8f8','#4a0a9f'],['#f8c8dc','#8f0a40'],['#b8e8e8','#006060'],
+  ['#f8e8b0','#604000'],['#f8c8c8','#8f0a0a'],['#d0e8b0','#2a5000']
+];
+const DEFAULT_ROLES = `Materials Managers: 2\nTech Leads: 2\nTimekeepers: 2\nClose Leaders: 2\nStudio Keepers: 2`;
+
+function loadAll() { try { return JSON.parse(localStorage.getItem('crewV4')||'null'); } catch(e) { return null; } }
+function saveAll() { try { localStorage.setItem('crewV4', JSON.stringify(allState)); } catch(e) {} }
+
+function parseRoles(text) {
+  return text.split('\n').map(line => {
+    const parts = line.split(':');
+    if(parts.length < 2) return null;
+    return { name: parts[0].trim(), slots: parseInt(parts[1].trim())||1 };
+  }).filter(Boolean);
+}
+
+let allState = loadAll() || {
+  classes: [
+    { name:'Creature Studio', names:[], roles:parseRoles(DEFAULT_ROLES), history:[], dayCount:0 },
+    { name:'Entrepreneurial Studio', names:[], roles:parseRoles(DEFAULT_ROLES), history:[], dayCount:0 }
+  ],
+  activeClass: 0
+};
+
+let absentToday = new Set();
+let lastAssignment = null;
+
+function cls() { return allState.classes[allState.activeClass]; }
+function getInitials(n) { return n.split(' ').map(p=>p[0]||'').join('').toUpperCase().slice(0,2); }
+
+function renderSwitcher() {
+  const sw = document.getElementById('class-switcher');
+  let html = '<span style="font-size:13px;color:#888;margin-right:4px;">Section:</span>';
+  allState.classes.forEach((c,i) => {
+    html += `<button class="class-btn${i===allState.activeClass?' active':''}" onclick="switchClass(${i})">${escHtml(c.name)}</button>`;
+  });
+  html += `<button class="add-section-btn" onclick="openModal()">+ New section</button>`;
+  sw.innerHTML = html;
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function switchClass(idx) {
+  allState.activeClass = idx;
+  absentToday = new Set();
+  lastAssignment = null;
+  saveAll();
+  renderSwitcher();
+  updateMetaLine();
+  showTab('board');
+  document.getElementById('undo-btn').style.display = 'none';
+  document.getElementById('board-content').innerHTML = '<div class="alert">Mark any absences above, then press "Assign today."</div>';
+}
+
+function updateMetaLine() {
+  const c = cls();
+  document.getElementById('meta-line').textContent = c.dayCount > 0 ? `Day ${c.dayCount} · last assigned` : 'No assignment yet';
+}
+
+function showTab(tab) {
+  const tabs = ['board','history','setup'];
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabs[i]===tab));
+  document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active', tabs[i]===tab));
+  if(tab==='history') renderHistory();
+  if(tab==='setup') renderSetup();
+  if(tab==='board') renderAbsenceGrid();
+}
+
+function renderAbsenceGrid() {
+  const c = cls();
+  if(c.names.length === 0) {
+    document.getElementById('absence-grid').innerHTML = '<span style="font-size:13px;color:#888;">Add students in Setup first.</span>';
+    return;
+  }
+  document.getElementById('absence-grid').innerHTML = c.names.map(n => {
+    const absent = absentToday.has(n);
+    return `<button class="absence-toggle${absent?' absent':''}" onclick="toggleAbsent(this,'${escJs(n)}')">${escHtml(n)}${absent?' (absent)':''}</button>`;
+  }).join('');
+}
+
+function escJs(s) { return s.replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+function toggleAbsent(btn, name) {
+  if(absentToday.has(name)) { absentToday.delete(name); btn.classList.remove('absent'); btn.textContent=name; }
+  else { absentToday.add(name); btn.classList.add('absent'); btn.textContent=name+' (absent)'; }
+}
+
+function getRoleCounts(c) {
+  const counts = {};
+  c.names.forEach(n => { counts[n] = {}; c.roles.forEach(r => { counts[n][r.name]=0; }); });
+  c.history.forEach(day => {
+    day.assignments.forEach(a => {
+      a.students.forEach(s => { if(counts[s]) counts[s][a.role]=(counts[s][a.role]||0)+1; });
+    });
+  });
+  return counts;
+}
+
+function assignToday() {
+  const c = cls();
+  if(c.names.length === 0) { showTab('setup'); return; }
+  const present = c.names.filter(n => !absentToday.has(n));
+  if(present.length === 0) {
+    document.getElementById('board-content').innerHTML = '<div class="alert">Everyone is marked absent.</div>';
+    return;
+  }
+  const roleCounts = getRoleCounts(c);
+
+  // Build a set of yesterday's role assignments: "studentName::roleName"
+  const yesterdayRoles = new Set();
+  if(c.history.length > 0) {
+    c.history[0].assignments.forEach(a => {
+      a.students.forEach(s => yesterdayRoles.add(s + '::' + a.role));
+    });
+  }
+
+  const scored = present.map(name => ({
+    name, totalAssigned: Object.values(roleCounts[name]||{}).reduce((s,v)=>s+v,0)
+  })).sort((a,b) => a.totalAssigned!==b.totalAssigned ? a.totalAssigned-b.totalAssigned : Math.random()-0.5);
+
+  const assignments = [];
+  const assigned = new Set();
+  c.roles.forEach(role => {
+    const students = [];
+    for(let i=0; i<role.slots; i++) {
+      // Hard-block: no same role as yesterday. Soft-prefer: hasn't done this role ever.
+      const hadYesterday = s => yesterdayRoles.has(s.name + '::' + role.name);
+      const hadEver = s => roleCounts[s.name]&&(roleCounts[s.name][role.name]||0)>0;
+      const notAssigned = s => !assigned.has(s.name);
+
+      // Tier 1: not assigned, not yesterday, never done this role
+      let eligible = scored.filter(s => notAssigned(s) && !hadYesterday(s) && !hadEver(s));
+      // Tier 2: not assigned, not yesterday (but may have done this role before)
+      if(eligible.length===0) eligible = scored.filter(s => notAssigned(s) && !hadYesterday(s));
+      // Tier 3: not assigned (last resort — allows yesterday repeat only if no other option)
+      if(eligible.length===0) eligible = scored.filter(s => notAssigned(s));
+
+      const pick = eligible.length>0 ? eligible[0] : null;
+      if(pick) { students.push(pick.name); assigned.add(pick.name); }
+    }
+    assignments.push({ role: role.name, students });
+  });
+
+  const unassigned = present.filter(n=>!assigned.has(n));
+  c.dayCount++;
+  const dayEntry = { day:c.dayCount, date:new Date().toLocaleDateString(), assignments, unassigned, absent:[...absentToday] };
+  c.history.unshift(dayEntry);
+  lastAssignment = dayEntry;
+  saveAll();
+  renderBoard(dayEntry);
+  document.getElementById('meta-line').textContent = `Day ${c.dayCount} · ${dayEntry.date}${absentToday.size>0?' · '+absentToday.size+' absent':''}`;
+  document.getElementById('undo-btn').style.display = 'inline-block';
+}
+
+function undoToday() {
+  const c = cls();
+  if(!lastAssignment || c.history.length===0 || c.history[0].day!==lastAssignment.day) return;
+  if(!confirm(`Undo Day ${lastAssignment.day} assignment and reassign?`)) return;
+  c.history.shift();
+  c.dayCount--;
+  lastAssignment = null;
+  saveAll();
+  document.getElementById('undo-btn').style.display = 'none';
+  document.getElementById('board-content').innerHTML = '<div class="alert">Last assignment undone. Adjust absences and press "Assign today" again.</div>';
+  updateMetaLine();
+}
+
+function renderBoard(dayEntry) {
+  const assigned = new Set(dayEntry.assignments.flatMap(a=>a.students));
+  let html = `<div style="display:flex;align-items:center;gap:12px;margin-bottom:0.5rem;">
+    <span class="day-badge">Day ${dayEntry.day}</span>
+    <span style="font-size:13px;color:#666;">${dayEntry.date}</span>
+    ${dayEntry.absent&&dayEntry.absent.length>0?`<span style="font-size:13px;color:#a32d2d;">${dayEntry.absent.length} absent</span>`:''}
+  </div>
+  <div style="font-size:12px;color:#888;margin-bottom:1rem;">Tap a name to swap them out if they show up absent.</div>
+  <div class="board">`;
+  dayEntry.assignments.forEach((a,ri) => {
+    const [bg,fg] = COLORS[ri%COLORS.length];
+    html += `<div class="role-card"><div class="role-label">${escHtml(a.role)}</div>`;
+    a.students.forEach(s => {
+      html += `<div class="assignee-chip" style="cursor:pointer;" onclick="swapStudent('${escJs(s)}','${escJs(a.role)}')" title="Tap to swap out">
+        <div class="avatar" style="background:${bg};color:${fg};">${getInitials(s)}</div>
+        <span style="border-bottom:1px dashed #aaa;">${escHtml(s)}</span>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  html += `</div>`;
+  if(dayEntry.absent&&dayEntry.absent.length>0) {
+    html += `<div class="unassigned-section"><h3>Absent today</h3><div class="pill-list">`;
+    dayEntry.absent.forEach(n => { html += `<span class="pill" style="background:#fde8e8;color:#a32d2d;border-color:#f09595;">${escHtml(n)}</span>`; });
+    html += `</div></div>`;
+  }
+  if(dayEntry.unassigned&&dayEntry.unassigned.length>0) {
+    html += `<div class="unassigned-section" style="margin-top:0.75rem;"><h3>Present, no role today</h3><div class="pill-list">`;
+    dayEntry.unassigned.forEach(n => { html += `<span class="pill">${escHtml(n)}</span>`; });
+    html += `</div></div>`;
+  }
+  document.getElementById('board-content').innerHTML = html;
+}
+
+function swapStudent(studentName, roleName) {
+  const c = cls();
+  if(c.history.length === 0) return;
+  const day = c.history[0];
+
+  // Build the full set of currently assigned students
+  const currentlyAssigned = new Set(day.assignments.flatMap(a => a.students));
+
+  // Students available: in roster, not currently assigned, not absent
+  const roleCounts = getRoleCounts(c);
+  const available = c.names.filter(n =>
+    !currentlyAssigned.has(n) &&
+    !(day.absent && day.absent.includes(n))
+  );
+
+  if(available.length === 0) {
+    alert(`No available students to swap in. Everyone is either assigned or absent.`);
+    return;
+  }
+
+  // Pick best replacement: fewest total assignments, hasn't done this role before preferred
+  const scored = available.map(n => ({
+    name: n,
+    total: Object.values(roleCounts[n]||{}).reduce((s,v)=>s+v,0),
+    doneRole: (roleCounts[n]&&roleCounts[n][roleName]||0) > 0
+  })).sort((a,b) => {
+    if(a.doneRole !== b.doneRole) return a.doneRole ? 1 : -1;
+    if(a.total !== b.total) return a.total - b.total;
+    return Math.random() - 0.5;
+  });
+
+  const replacement = scored[0].name;
+
+  if(!confirm(`Swap out ${studentName} and bring in ${replacement} for ${roleName}?`)) return;
+
+  // Update the assignment in place
+  day.assignments.forEach(a => {
+    if(a.role === roleName) {
+      const idx = a.students.indexOf(studentName);
+      if(idx !== -1) a.students[idx] = replacement;
+    }
+  });
+
+  // Move swapped-out student to absent list, remove replacement from unassigned if they were there
+  if(!day.absent) day.absent = [];
+  if(!day.absent.includes(studentName)) day.absent.push(studentName);
+  day.unassigned = day.unassigned.filter(n => n !== replacement);
+
+  saveAll();
+  renderBoard(day);
+  document.getElementById('meta-line').textContent = `Day ${day.day} · ${day.date} · edited`;
+}
+
+function renderHistory() {
+  const c = cls();
+  if(c.history.length===0) { document.getElementById('history-content').innerHTML='<div class="alert">No history yet.</div>'; return; }
+  const roleCounts = getRoleCounts(c);
+  const neverAssigned = c.names.filter(n => roleCounts[n]&&Object.values(roleCounts[n]).every(v=>v===0));
+  let html = '';
+  if(neverAssigned.length>0) {
+    html += `<div class="alert" style="margin-bottom:1rem;background:#fff9e6;border-color:#f0d080;color:#7a5000;"><strong style="font-weight:500;">Never had a role:</strong> ${neverAssigned.map(escHtml).join(', ')}</div>`;
+  }
+  html += `<table class="history-table"><thead><tr><th>Student</th><th>Times assigned</th><th>Roles held</th></tr></thead><tbody>`;
+  c.names.forEach(n => {
+    const counts = roleCounts[n]||{};
+    const total = Object.values(counts).reduce((s,v)=>s+v,0);
+    const unique = Object.entries(counts).filter(([,v])=>v>0).map(([k])=>k);
+    const absentCount = c.history.filter(d=>d.absent&&d.absent.includes(n)).length;
+    html += `<tr><td>${escHtml(n)}${total===0?'<span class="flag-new">no role yet</span>':''}${absentCount>0?`<span class="flag-absent">${absentCount}x absent</span>`:''}</td><td style="color:#666;">${total}</td><td>${unique.map(r=>`<span class="badge-role">${escHtml(r)}</span>`).join('')||'<span style="font-size:12px;color:#888;">none</span>'}</td></tr>`;
+  });
+  html += `</tbody></table><div style="margin-top:1.5rem;"><div class="section-divider">Day log</div>`;
+  c.history.forEach(day => {
+    html += `<div style="margin-bottom:10px;padding:10px 14px;border:1px solid #dde2f0;border-radius:8px;">
+      <div style="font-size:13px;font-weight:500;margin-bottom:4px;">Day ${day.day} · ${day.date}${day.absent&&day.absent.length>0?` <span style="font-weight:400;color:#a32d2d;font-size:12px;">(${day.absent.map(escHtml).join(', ')} absent)</span>`:''}</div>
+      <div style="font-size:12px;color:#666;">`;
+    day.assignments.forEach(a => { html += `<span style="margin-right:12px;"><strong style="font-weight:500;">${escHtml(a.role)}:</strong> ${a.students.map(escHtml).join(', ')}</span>`; });
+    html += `</div></div>`;
+  });
+  html += `</div>`;
+  document.getElementById('history-content').innerHTML = html;
+}
+
+function renderSetup() {
+  const c = cls();
+  document.getElementById('section-name-input').value = c.name;
+  document.getElementById('names-input').value = c.names.join('\n');
+  document.getElementById('roles-input').value = c.roles.map(r=>`${r.name}: ${r.slots}`).join('\n');
+}
+
+function saveSectionName() {
+  const newName = document.getElementById('section-name-input').value.trim();
+  if(!newName) return;
+  cls().name = newName;
+  saveAll();
+  renderSwitcher();
+  showMsg('Section renamed');
+}
+
+function saveSetup() {
+  const c = cls();
+  c.names = document.getElementById('names-input').value.split('\n').map(n=>n.trim()).filter(Boolean);
+  c.roles = parseRoles(document.getElementById('roles-input').value);
+  absentToday = new Set([...absentToday].filter(n=>c.names.includes(n)));
+  saveAll();
+  showMsg(`Saved — ${c.names.length} students, ${c.roles.length} roles`);
+  renderAbsenceGrid();
+}
+
+function deleteSection() {
+  if(allState.classes.length <= 1) { alert('You must have at least one section.'); return; }
+  if(!confirm(`Delete "${cls().name}"? This cannot be undone.`)) return;
+  allState.classes.splice(allState.activeClass, 1);
+  allState.activeClass = 0;
+  saveAll();
+  renderSwitcher();
+  switchClass(0);
+}
+
+function clearHistory() {
+  if(!confirm(`Clear all history for "${cls().name}"? This cannot be undone.`)) return;
+  cls().history = [];
+  cls().dayCount = 0;
+  lastAssignment = null;
+  saveAll();
+  document.getElementById('history-content').innerHTML = '<div class="alert">History cleared.</div>';
+  document.getElementById('meta-line').textContent = 'No assignment yet';
+  document.getElementById('undo-btn').style.display = 'none';
+}
+
+function showMsg(msg) {
+  const el = document.getElementById('setup-msg');
+  el.textContent = msg;
+  setTimeout(()=>{ el.textContent=''; }, 2500);
+}
+
+function openModal() {
+  document.getElementById('new-section-name').value = '';
+  document.getElementById('modal-bg').classList.add('open');
+  setTimeout(()=>document.getElementById('new-section-name').focus(), 100);
+}
+function closeModal() { document.getElementById('modal-bg').classList.remove('open'); }
+function handleModalBgClick(e) { if(e.target===document.getElementById('modal-bg')) closeModal(); }
+function confirmNewSection() {
+  const name = document.getElementById('new-section-name').value.trim();
+  if(!name) return;
+  allState.classes.push({ name, names:[], roles:parseRoles(DEFAULT_ROLES), history:[], dayCount:0 });
+  allState.activeClass = allState.classes.length - 1;
+  saveAll();
+  closeModal();
+  renderSwitcher();
+  switchClass(allState.activeClass);
+  showTab('setup');
+}
+
+function openDisplayMode() {
+  const c = cls();
+  if(c.history.length === 0) { alert('No assignment yet. Press "Assign today" first.'); return; }
+  const day = c.history[0];
+  document.getElementById('display-title').textContent = c.name + ' · Crew Roles';
+  document.getElementById('display-day').textContent = `Day ${day.day} · ${day.date}`;
+  let board = '';
+  day.assignments.forEach((a,ri) => {
+    const [bg,fg] = COLORS[ri%COLORS.length];
+    board += `<div class="display-card"><div class="display-role-label">${escHtml(a.role)}</div>`;
+    a.students.forEach(s => {
+      board += `<div class="display-name"><div class="display-avatar" style="background:${bg};color:${fg};">${getInitials(s)}</div><span class="display-name-text">${escHtml(s)}</span></div>`;
+    });
+    board += `</div>`;
+  });
+  document.getElementById('display-board').innerHTML = board;
+  let footer = '';
+  if(day.absent&&day.absent.length>0) {
+    footer += `<div class="display-absent"><div class="display-absent-label">Absent today</div><div class="display-absent-names">${day.absent.map(escHtml).join(' · ')}</div></div>`;
+  }
+  if(day.unassigned&&day.unassigned.length>0) {
+    footer += `<div style="margin-top:1rem;"><div class="display-unassigned-label">No role today</div><div class="display-unassigned-names">${day.unassigned.map(escHtml).join(' · ')}</div></div>`;
+  }
+  document.getElementById('display-footer').innerHTML = footer;
+  document.getElementById('display-overlay').classList.add('open');
+}
+function closeDisplayMode() { document.getElementById('display-overlay').classList.remove('open'); }
+
+function downloadBackup() {
+  const data = JSON.stringify(allState, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const date = new Date().toISOString().slice(0,10);
+  a.download = `crew-roles-backup-${date}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showMsg('Backup downloaded');
+}
+
+function restoreBackup(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if(!data.classes || !Array.isArray(data.classes)) {
+        alert('This file doesn\u2019t look like a valid crew roles backup.');
+        return;
+      }
+      if(!confirm(`Restore from backup? This will replace all current data (${allState.classes.length} section${allState.classes.length!==1?'s':''}) with the backup (${data.classes.length} section${data.classes.length!==1?'s':''}).`)) return;
+      allState = data;
+      if(allState.activeClass >= allState.classes.length) allState.activeClass = 0;
+      saveAll();
+      absentToday = new Set();
+      lastAssignment = null;
+      renderSwitcher();
+      renderAbsenceGrid();
+      updateMetaLine();
+      showTab('board');
+      document.getElementById('board-content').innerHTML = '<div class="alert" style="background:#e8f5e9;border-color:#a5d6a7;color:#2e7d32;">Backup restored successfully.</div>';
+    } catch(err) {
+      alert('Could not read this file. Make sure it\u2019s a crew roles backup JSON file.');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+renderSwitcher();
+renderAbsenceGrid();
+updateMetaLine();
+</script>
+</body>
+</html>
